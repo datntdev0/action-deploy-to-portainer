@@ -1,18 +1,26 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Deploy to Portainer'
+description: 'Deploy services to Portainer using GitHub Actions'
+author: 'Dat Nguyen (datntdev@outlook.com)'
 
-# Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  portainerHost:
+    description: 'The host URL of the Portainer instance'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+  portainerApiKey:
+    description: 'The API key for the Portainer instance'
+    required: true
+  portainerEnvId:
+    description: 'The environment ID in Portainer where the stack will be deployed'
+    required: true
+  portainerStackName:
+    description: 'The name of the stack to be deployed in Portainer'
+    required: true
+  portainerFilePath:
+    description: 'The file path of the Docker Compose file to be deployed'
+    required: true
+  portainerEnvVars:
+    description: 'Environment variables to be passed to the stack (optional)'
+    required: false
 
 runs:
   using: node20
