@@ -2750,25 +2750,35 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(186));
-const wait_1 = __nccwpck_require__(259);
+const portainer_api_1 = __importDefault(__nccwpck_require__(230));
+const parameters_1 = __nccwpck_require__(232);
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
     try {
-        const ms = core.getInput('milliseconds');
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`);
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString());
-        await (0, wait_1.wait)(parseInt(ms, 10));
-        core.debug(new Date().toTimeString());
-        // Set outputs for other workflow steps to use
-        core.setOutput('time', new Date().toTimeString());
+        const params = (0, parameters_1.getParameters)();
+        const apiInstance = new portainer_api_1.default(params);
+        // Get existing stack
+        core.info('Getting existing stack...');
+        const stackList = await apiInstance.getStackListAsync();
+        // Delete existing stack
+        core.info('Deleting existing stack...');
+        const deleteRequests = stackList
+            .filter(x => x.Name.includes(params.portainerStackName))
+            .map(async (x) => apiInstance.deleteStackAsync(x.Id));
+        await Promise.all(deleteRequests);
+        // Deploy new stack
+        core.info('Deploying new stack...');
+        await apiInstance.postStandaloneStackFromFile();
+        core.info('Done!');
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -2781,27 +2791,167 @@ exports.run = run;
 
 /***/ }),
 
-/***/ 259:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 232:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
+exports.getParameters = void 0;
+const core = __importStar(__nccwpck_require__(186));
 /**
- * Wait for a number of milliseconds.
- * @param milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
+ * This function retrieves the input parameters required for the action from the GitHub Actions environment.
+ * It uses the @actions/core library's getInput method to read these parameters.
+ * The 'required' option is set to true for all parameters except 'portainerEnvVars', which is optional.
+ *
+ * @returns {Parameters} An object containing all the input parameters.
  */
-async function wait(milliseconds) {
-    return new Promise(resolve => {
-        if (isNaN(milliseconds)) {
-            throw new Error('milliseconds not a number');
-        }
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
+function getParameters() {
+    return {
+        portainerHost: core.getInput('portainerHost', { required: true }),
+        portainerApiKey: core.getInput('portainerApiKey', { required: true }),
+        portainerEnvId: core.getInput('portainerEnvId', { required: true }),
+        portainerStackName: core.getInput('portainerStackName', { required: true }),
+        portainerFilePath: core.getInput('portainerFilePath', { required: true }),
+        portainerEnvVars: core.getInput('portainerEnvVars', { required: false })
+    };
 }
-exports.wait = wait;
+exports.getParameters = getParameters;
+
+
+/***/ }),
+
+/***/ 230:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const utils = __importStar(__nccwpck_require__(314));
+class PortainerApiInstance {
+    _host;
+    _envId;
+    _parameters;
+    _defaultHeaders;
+    constructor(params) {
+        this._host = params.portainerHost;
+        this._envId = params.portainerEnvId;
+        this._parameters = params;
+        this._defaultHeaders = this.getDefaultHeaders();
+    }
+    async getStackListAsync() {
+        const requestOptions = {
+            method: 'GET',
+            headers: this._defaultHeaders,
+            redirect: 'follow'
+        };
+        const response = await fetch(`${this._host}/api/stacks?filters={"EndpointID":2,"IncludeOrphanedStacks":true}`, requestOptions);
+        return (await response.json());
+    }
+    async deleteStackAsync(stackId) {
+        const requestOptions = {
+            method: 'DELETE',
+            headers: this._defaultHeaders,
+            redirect: 'follow'
+        };
+        await fetch(`${this._host}/api/stacks/${stackId}?endpointId=${this._envId}`, requestOptions);
+    }
+    async postStandaloneStackFromFile() {
+        const formdata = new FormData();
+        formdata.append('Name', this._parameters.portainerStackName);
+        formdata.append('Env', this._parameters.portainerEnvVars);
+        formdata.append('file', utils.getFileBlob(this._parameters.portainerFilePath));
+        const requestOptions = {
+            method: 'POST',
+            headers: this._defaultHeaders,
+            body: formdata,
+            redirect: 'follow'
+        };
+        const response = await fetch(`${this._host}/api/stacks/create/standalone/file?endpointId=${this._envId}`, requestOptions);
+        return (await response.json());
+    }
+    getDefaultHeaders() {
+        const headers = new Headers();
+        headers.append('Accept', '*/*');
+        headers.append('X-API-KEY', this._parameters.portainerApiKey);
+        return headers;
+    }
+}
+exports["default"] = PortainerApiInstance;
+
+
+/***/ }),
+
+/***/ 314:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getFileBlob = void 0;
+const path_1 = __importDefault(__nccwpck_require__(17));
+const fs_1 = __importDefault(__nccwpck_require__(147));
+/**
+ * This function takes a relative file path, constructs the absolute path by joining it with the GITHUB_WORKSPACE environment variable,
+ * reads the file from the constructed path, and returns a new Blob object containing the file data.
+ *
+ * @param {string} relativePath - The relative path of the file.
+ * @returns {Blob} - A Blob object containing the file data.
+ */
+function getFileBlob(relativePath) {
+    const filePath = path_1.default.join(process.env.GITHUB_WORKSPACE, relativePath);
+    return new Blob([fs_1.default.readFileSync(filePath)]);
+}
+exports.getFileBlob = getFileBlob;
 
 
 /***/ }),
